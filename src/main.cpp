@@ -36,6 +36,7 @@
 #include "Training.h"
 #include "Movegen.h"
 #include "pgn.h"
+#include "main.h"
 
 using namespace Utils;
 
@@ -53,46 +54,70 @@ static void license_blurb() {
     );
 }
 
+static void fill_options_desc(options_description &v_desc)
+{
+	namespace po = boost::program_options;
+	v_desc.add_options()
+		("help,h", "Show commandline options.")
+		("threads,t", po::value<int>()->default_value
+		(std::min(cfg_num_threads, cfg_max_threads)),
+			"Number of threads to use.")
+			("playouts,p", po::value<int>(),
+				"Weaken engine by limiting the number of playouts. "
+				"Requires --noponder.")
+				("visits,v", po::value<int>(),
+					"Weaken engine by limiting the number of visits.")
+					("resignpct,r", po::value<int>()->default_value(cfg_resignpct),
+						"Resign when winrate is less than x%.")
+						("noise,n", "Apply dirichlet noise to root.")
+		("randomize,m", "Randomize move selection at root.")
+		("tempdecay,d", po::value<int>(),
+			"Use decay schedule for move selection temperature.")
+			("seed,s", po::value<std::uint64_t>(),
+				"Random number generation seed.")
+				("weights,w", po::value<std::string>(), "File with network weights.")
+		("logfile,l", po::value<std::string>(), "File to log input/output to.")
+		("quiet,q", "Disable all diagnostic output.")
+		("noponder", "Disable thinking on opponent's time.")
+		("uci", "Don't initialize the engine until \"isready\" command is sent. Use this if your GUI is freezing on startup.")
+		("start", po::value<std::string>(), "Start command {train, bench}.")
+		("supervise", po::value<std::string>(), "Dump supervised learning data from the pgn.")
+		("gpu", po::value<std::vector<int> >(),
+			"ID of the OpenCL device(s) to use (disables autodetection).")
+#ifdef USE_OPENCL
+			("full-tuner", "Try harder to find an optimal OpenCL tuning.")
+		("tune-only", "Tune OpenCL only and then exit.")
+#endif
+#ifdef USE_TUNER
+		("puct", po::value<float>())
+		("softmax_temp", po::value<float>())
+#endif
+		;
+}
+
+void check_cmd_options(variables_map vm)
+{
+	if (vm.count("help") || vm.count("arguments")) {
+		auto ev = EXIT_SUCCESS;
+		// The user specified an argument. We don't accept any, so explain
+		// our usage.
+		if (vm.count("arguments")) {
+			for (auto& arg : vm["arguments"].as<std::vector<std::string>>()) {
+				std::cout << "Unrecognized argument: " << arg << std::endl;
+			}
+			ev = EXIT_FAILURE;
+		}
+		license_blurb();
+		std::cout << v_desc << std::endl;
+		exit(ev);
+	}
+}
+
 static std::string parse_commandline(int argc, char *argv[]) {
     namespace po = boost::program_options;
     // Declare the supported options.
     po::options_description v_desc("Allowed options");
-    v_desc.add_options()
-        ("help,h", "Show commandline options.")
-        ("threads,t", po::value<int>()->default_value
-                      (std::min(cfg_num_threads, cfg_max_threads)),
-                      "Number of threads to use.")
-        ("playouts,p", po::value<int>(),
-                       "Weaken engine by limiting the number of playouts. "
-                       "Requires --noponder.")
-        ("visits,v", po::value<int>(),
-                       "Weaken engine by limiting the number of visits.")
-        ("resignpct,r", po::value<int>()->default_value(cfg_resignpct),
-                       "Resign when winrate is less than x%.")
-        ("noise,n", "Apply dirichlet noise to root.")
-        ("randomize,m", "Randomize move selection at root.")
-        ("tempdecay,d", po::value<int>(),
-                       "Use decay schedule for move selection temperature.")
-        ("seed,s", po::value<std::uint64_t>(),
-                   "Random number generation seed.")
-        ("weights,w", po::value<std::string>(), "File with network weights.")
-        ("logfile,l", po::value<std::string>(), "File to log input/output to.")
-        ("quiet,q", "Disable all diagnostic output.")
-        ("noponder", "Disable thinking on opponent's time.")
-        ("uci", "Don't initialize the engine until \"isready\" command is sent. Use this if your GUI is freezing on startup.")
-        ("start", po::value<std::string>(), "Start command {train, bench}.")
-        ("supervise", po::value<std::string>(), "Dump supervised learning data from the pgn.")
-        ("gpu",  po::value<std::vector<int> >(),
-                "ID of the OpenCL device(s) to use (disables autodetection).")
-#ifdef USE_OPENCL
-        ("full-tuner", "Try harder to find an optimal OpenCL tuning.")
-        ("tune-only", "Tune OpenCL only and then exit.")
-#endif
-#ifdef USE_TUNER
-        ("puct", po::value<float>())
-        ("softmax_temp", po::value<float>())
-#endif
-        ;
+    
     // These won't be shown, we use them to catch incorrect usage of the
     // command line.
     po::options_description h_desc("Hidden options");
@@ -116,20 +141,6 @@ static std::string parse_commandline(int argc, char *argv[]) {
     }
 
     // Handle commandline options
-    if (vm.count("help") || vm.count("arguments")) {
-        auto ev = EXIT_SUCCESS;
-        // The user specified an argument. We don't accept any, so explain
-        // our usage.
-        if (vm.count("arguments")) {
-            for (auto& arg : vm["arguments"].as<std::vector<std::string>>()) {
-                std::cout << "Unrecognized argument: " << arg << std::endl;
-            }
-            ev = EXIT_FAILURE;
-        }
-        license_blurb();
-        std::cout << v_desc << std::endl;
-        exit(ev);
-    }
 
     if (vm.count("quiet")) {
         cfg_quiet = true;
