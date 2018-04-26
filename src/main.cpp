@@ -36,7 +36,6 @@
 #include "Training.h"
 #include "Movegen.h"
 #include "pgn.h"
-#include "main.h"
 
 using namespace Utils;
 
@@ -117,7 +116,7 @@ static std::string parse_commandline(int argc, char *argv[]) {
     namespace po = boost::program_options;
     // Declare the supported options.
     po::options_description v_desc("Allowed options");
-    
+		fill_options_desc(v_desc);
     // These won't be shown, we use them to catch incorrect usage of the
     // command line.
     po::options_description h_desc("Hidden options");

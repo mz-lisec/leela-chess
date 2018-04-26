@@ -7248,41 +7248,47 @@ public:
         return err;
     }
 
-    cl_int enqueueWriteBufferRect(
-        const Buffer& buffer,
-        cl_bool blocking,
-        const array<size_type, 3>& buffer_offset,
-        const array<size_type, 3>& host_offset,
-        const array<size_type, 3>& region,
-        size_type buffer_row_pitch,
-        size_type buffer_slice_pitch,
-        size_type host_row_pitch,
-        size_type host_slice_pitch,
-        const void *ptr,
-        const vector<Event>* events = NULL,
-        Event* event = NULL) const
+    struct BufferRectPar
+    {
+    	const Buffer *buffer;
+    	cl_bool blocking;
+    	array<size_type, 3>* buffer_offset;
+    	array<size_type, 3>* host_offset;
+    	array<size_type, 3>* region;
+    	size_type buffer_row_pitch;
+    	size_type buffer_slice_pitch;
+    	size_type host_row_pitch;
+    	size_type host_slice_pitch;
+    	const void *ptr;
+    	const vector<Event>* events;
+    	Event* event;
+    };
+    
+
+
+    cl_int enqueueWriteBufferRect(BufferRectPar &par ) const
     {
         cl_event tmp;
         cl_int err = detail::errHandler(
             ::clEnqueueWriteBufferRect(
                 object_, 
-                buffer(), 
-                blocking,
-                buffer_offset.data(),
-                host_offset.data(),
-                region.data(),
-                buffer_row_pitch,
-                buffer_slice_pitch,
-                host_row_pitch,
-                host_slice_pitch,
-                ptr,
-                (events != NULL) ? (cl_uint) events->size() : 0,
-                (events != NULL && events->size() > 0) ? (cl_event*) &events->front() : NULL,
-                (event != NULL) ? &tmp : NULL),
+                par.buffer(), 
+                par.blocking,
+                par.buffer_offset.data(),
+                par.host_offset.data(),
+                par.region.data(),
+                par.buffer_row_pitch,
+                par.buffer_slice_pitch,
+                par.host_row_pitch,
+                par.host_slice_pitch,
+                par.ptr,
+                (par.events != NULL) ? (cl_uint) par.events->size() : 0,
+                (par.events != NULL && par.events->size() > 0) ? (cl_event*) &par.events->front() : NULL,
+                (par.event != NULL) ? &tmp : NULL),
                 __ENQUEUE_WRITE_BUFFER_RECT_ERR);
 
-        if (event != NULL && err == CL_SUCCESS)
-            *event = tmp;
+        if (par.event != NULL && err == CL_SUCCESS)
+            *par.event = tmp;
 
         return err;
     }
@@ -7462,7 +7468,34 @@ public:
     }
 
 #if CL_HPP_TARGET_OPENCL_VERSION >= 120
-    /**
+		cl_int enqueueFillImage_impl(
+			const Image& image,
+			void* fillColor,
+			const array<size_type, 3>& origin,
+			const array<size_type, 3>& region,
+			const vector<Event>* events = NULL,
+			Event* event = NULL) const
+		{
+			cl_event tmp;
+			cl_int err = detail::errHandler(
+				::clEnqueueFillImage(
+					object_,
+					image(),
+					static_cast<void*>(&fillColor),
+					origin.data(),
+					region.data(),
+					(events != NULL) ? (cl_uint)events->size() : 0,
+					(events != NULL && events->size() > 0) ? (cl_event*)&events->front() : NULL,
+					(event != NULL) ? &tmp : NULL),
+				__ENQUEUE_FILL_IMAGE_ERR);
+
+			if (event != NULL && err == CL_SUCCESS)
+				*event = tmp;
+
+			return err;
+		}
+		
+		/**
      * Enqueue a command to fill an image object with a specified color.
      * \param fillColor is the color to use to fill the image.
      *     This is a four component RGBA floating-point color value if
@@ -7477,23 +7510,10 @@ public:
         const vector<Event>* events = NULL,
         Event* event = NULL) const
     {
-        cl_event tmp;
-        cl_int err = detail::errHandler(
-            ::clEnqueueFillImage(
-                object_, 
-                image(),
-                static_cast<void*>(&fillColor), 
-                origin.data(),
-                region.data(),
-                (events != NULL) ? (cl_uint) events->size() : 0,
-                (events != NULL && events->size() > 0) ? (cl_event*) &events->front() : NULL,
-                (event != NULL) ? &tmp : NULL),
-                __ENQUEUE_FILL_IMAGE_ERR);
-
-        if (event != NULL && err == CL_SUCCESS)
-            *event = tmp;
-
-        return err;
+			return enqueueFillImage_impl(image,
+				static_cast<void*>(&fillColor),
+				origin, region, events, event
+			);
     }
 
     /**
@@ -7511,23 +7531,10 @@ public:
         const vector<Event>* events = NULL,
         Event* event = NULL) const
     {
-        cl_event tmp;
-        cl_int err = detail::errHandler(
-            ::clEnqueueFillImage(
-                object_, 
-                image(),
-                static_cast<void*>(&fillColor), 
-                origin.data(),
-                region.data(),
-                (events != NULL) ? (cl_uint) events->size() : 0,
-                (events != NULL && events->size() > 0) ? (cl_event*) &events->front() : NULL,
-                (event != NULL) ? &tmp : NULL),
-                __ENQUEUE_FILL_IMAGE_ERR);
-
-        if (event != NULL && err == CL_SUCCESS)
-            *event = tmp;
-
-        return err;
+			return enqueueFillImage_impl( image,
+					static_cast<void*>(&fillColor),
+					origin, region, events, event
+				);
     }
 
     /**
@@ -7545,23 +7552,10 @@ public:
         const vector<Event>* events = NULL,
         Event* event = NULL) const
     {
-        cl_event tmp;
-        cl_int err = detail::errHandler(
-            ::clEnqueueFillImage(
-                object_, 
-                image(),
-                static_cast<void*>(&fillColor), 
-                origin.data(),
-                region.data(),
-                (events != NULL) ? (cl_uint) events->size() : 0,
-                (events != NULL && events->size() > 0) ? (cl_event*) &events->front() : NULL,
-                (event != NULL) ? &tmp : NULL),
-                __ENQUEUE_FILL_IMAGE_ERR);
-
-        if (event != NULL && err == CL_SUCCESS)
-            *event = tmp;
-
-        return err;
+			return enqueueFillImage_impl(image,
+				static_cast<void*>(&fillColor),
+				origin, region, events, event
+			);
     }
 #endif // CL_HPP_TARGET_OPENCL_VERSION >= 120
 
@@ -9014,19 +9008,7 @@ inline cl_int enqueueReadBufferRect(
         event);
 }
 
-inline cl_int enqueueWriteBufferRect(
-    const Buffer& buffer,
-    cl_bool blocking,
-    const array<size_type, 3>& buffer_offset,
-    const array<size_type, 3>& host_offset,
-    const array<size_type, 3>& region,
-    size_type buffer_row_pitch,
-    size_type buffer_slice_pitch,
-    size_type host_row_pitch,
-    size_type host_slice_pitch,
-    const void *ptr,
-    const vector<Event>* events = NULL,
-    Event* event = NULL)
+inline cl_int enqueueWriteBufferRect( BufferRectPar &par )
 {
     cl_int error;
     CommandQueue queue = CommandQueue::getDefault(&error);
@@ -9035,19 +9017,7 @@ inline cl_int enqueueWriteBufferRect(
         return error;
     }
 
-    return queue.enqueueWriteBufferRect(
-        buffer, 
-        blocking, 
-        buffer_offset, 
-        host_offset,
-        region,
-        buffer_row_pitch,
-        buffer_slice_pitch,
-        host_row_pitch,
-        host_slice_pitch,
-        ptr, 
-        events, 
-        event);
+    return queue.enqueueWriteBufferRect( par );
 }
 
 inline cl_int enqueueCopyBufferRect(
