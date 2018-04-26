@@ -79,6 +79,8 @@
 #  define pext(b, m) 0
 #endif
 
+#include <TypesFile.h>
+
 #ifdef USE_POPCNT
 const bool HasPopCnt = true;
 #else
@@ -213,10 +215,6 @@ enum Direction : int {
   NORTH_WEST = NORTH + WEST
 };
 
-enum File : int {
-  FILE_A, FILE_B, FILE_C, FILE_D, FILE_E, FILE_F, FILE_G, FILE_H, FILE_NB
-};
-
 enum Rank : int {
   RANK_1, RANK_2, RANK_3, RANK_4, RANK_5, RANK_6, RANK_7, RANK_8, RANK_NB
 };
@@ -272,9 +270,6 @@ constexpr Square operator~(Square s) {
   return Square(s ^ SQ_A8); // Vertical flip SQ_A1 -> SQ_A8
 }
 
-constexpr File operator~(File f) {
-  return File(f ^ FILE_H); // Horizontal flip FILE_A -> FILE_H
-}
 
 constexpr Piece operator~(Piece pc) {
   return Piece(pc ^ 8); // Swap color of piece B_KNIGHT -> W_KNIGHT
@@ -305,9 +300,6 @@ constexpr bool is_ok(Square s) {
   return s >= SQ_A1 && s <= SQ_H8;
 }
 
-constexpr File file_of(Square s) {
-  return File(s & 7);
-}
 
 constexpr Rank rank_of(Square s) {
   return Rank(s >> 3);
